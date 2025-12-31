@@ -1,5 +1,5 @@
 import { GameMaster } from './GameMaster';
-import type { CardEntity, Position, CardCategory } from '../types'; // ★修正: type を追加
+import type { CardEntity, Position} from '../types'; // ★修正: type を追加
 
 export class EffectManager {
   // ★修正: プロパティを明示的に宣言
