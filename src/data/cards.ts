@@ -45,9 +45,9 @@ export const CARD_MASTER_DATA: CardData[] = [
   { 
     id: "tower_mansion", name: "タワマン", category: "RESIDENTIAL", rarity: "LEGENDARY", cost: 8, 
     image: "tower_mansion.png",
-    stats: { p1: 10, p2: -2, tax: 2 }, 
+    stats: { p1: 10, p2: -1, tax: 2 }, 
     arrows: ["UP"], effects: [],
-    description: "圧倒的な人口を誇るが、インフラを圧迫(-2)する。"
+    description: "圧倒的な人口を誇るが、インフラを圧迫(-1)する。"
   },
 
   // ==========================================
@@ -63,7 +63,7 @@ export const CARD_MASTER_DATA: CardData[] = [
   { 
     id: "convenience_store", name: "コンビニ", category: "NON_RESIDENTIAL", rarity: "COMMON", cost: 1, 
     image: "convenience_store.png",
-    stats: { p1: 0, p2: 0, tax: 1 }, 
+    stats: { p1: 0, p2: 1, tax: 1 }, 
     arrows: ["UP", "DOWN"], effects: [],
     description: "小銭稼ぎ用。"
   },
@@ -77,7 +77,7 @@ export const CARD_MASTER_DATA: CardData[] = [
   { 
     id: "clinic", name: "診療所", category: "NON_RESIDENTIAL", rarity: "UNCOMMON", cost: 2, 
     image: "clinic.png",
-    stats: { p1: 0, p2: 1, tax: 0 }, 
+    stats: { p1: 0, p2: 2, tax: 0 }, 
     arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
     effects: [{ trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', description: "隣接住居の人口+1" }],
     description: "隣接する住居の人口を増やす。"
@@ -101,7 +101,7 @@ export const CARD_MASTER_DATA: CardData[] = [
   { 
     id: "factory", name: "工場", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 3, 
     image: "factory.png",
-    stats: { p1: 0, p2: 4, tax: 1 }, 
+    stats: { p1: 0, p2: 3, tax: 1 }, 
     arrows: ["DOWN"], effects: [],
     description: "強力なインフラ源だが、配置が難しい。"
   },
@@ -116,9 +116,37 @@ export const CARD_MASTER_DATA: CardData[] = [
   { 
     id: "office", name: "オフィス", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 4, 
     image: "office.png",
-    stats: { p1: 0, p2: 1, tax: 1 }, 
+    stats: { p1: 0, p2: 2, tax: 1 }, 
     arrows: ["UP", "DOWN"], 
     effects: [{ trigger: 'PASSIVE', type: 'BUFF_GLOBAL', value: 1, targetCategory: 'NON_RESIDENTIAL', description: "自分の[非居住系]全ての人口+1" }],
     description: "ビジネス街を形成し、非居住系の価値を高める（※現在は人口加算仕様）。"
-  }
+  },
+  {
+  "id": "power_plant",
+  "name": "火力発電所",
+  "category": "NON_RESIDENTIAL",
+  "rarity": "RARE",
+  "cost": 4,
+  "image": "power_plant.png",
+  "stats": {
+    "p1": 0,
+    "p2": 8,
+    "tax": 1
+  },
+  "arrows": [
+    "LEFT",
+    "RIGHT"
+  ],
+  "effects": [
+    {
+      "trigger": "PASSIVE",
+      "type": "BUFF_ADJACENT",
+      "value": -1,
+      "targetCategory": "RESIDENTIAL",
+      "description": "騒音と排煙。隣接する居住区の人口-1"
+    }
+  ],
+  "description": "都市の活動を支える巨大なエネルギー源。住宅地からは離して建設すべきだ。"
+}
+
 ];
