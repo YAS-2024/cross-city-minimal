@@ -1,26 +1,28 @@
 // src/config.ts
 
 export const GAME_CONFIG = {
-  // 盤面設定
   BOARD: {
-    RADIUS: 2,           // 中心から半径何マスか (2なら -2〜+2 の 5x5)
+    RADIUS: 2,
   },
 
-  // カード・デッキ設定
   CARD: {
-    COPIES_IN_DECK: 3,   // 1種類あたりの枚数
-    INITIAL_HAND: 3,     // ゲーム開始時の手札枚数
-    DRAW_PER_TURN: 1,    // ターン開始時のドロー枚数
-    MAX_HAND: 7,         // 手札上限枚数（UIの表示崩れ防止のため推奨）
+    // ★変更: 一律設定(COPIES_IN_DECK)を削除し、レアリティ別に設定
+    COPIES_BY_RARITY: {
+      COMMON: 3,
+      UNCOMMON: 2,
+      RARE: 1,
+      LEGENDARY: 1,
+    },
+    INITIAL_HAND: 3,
+    DRAW_PER_TURN: 1,
+    MAX_HAND: 7,
   },
 
-  // 経済設定
   ECONOMY: {
-    DISCARD_BONUS: 2,    // カードを捨てた時の収入
+    DISCARD_BONUS: 2,
   },
   
-  // システム設定
   SYSTEM: {
-    AI_THINK_TIME: 1000, // CPUの思考時間(ms)
+    AI_THINK_TIME: 1000,
   }
 } as const;

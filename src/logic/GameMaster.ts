@@ -2,33 +2,31 @@ import { v4 as uuidv4 } from 'uuid';
 import { BoardModel } from '../models/BoardModel';
 import { PlayerModel } from '../models/PlayerModel';
 import { RuleEngine } from './RuleEngine';
-import { GAME_CONFIG } from '../config'; // ★追加
-import type { CardData, CardEntity, Position, GamePhase } from '../types';
-
-export interface ActionResult {
-  success: boolean;
-  message: string;
-}
+import { EffectManager } from './EffectManager';
+import { GAME_CONFIG } from '../config';
+// ★修正: ActionResult をここに追加
+import type { CardData, CardEntity, Position, GamePhase, ActionResult } from '../types';
 
 export class GameMaster {
   board: BoardModel;
   deck: CardEntity[] = [];
   discardPile: CardEntity[] = [];
-
   players: Map<string, PlayerModel> = new Map();
   turnOrder: string[] = [];
   activePlayerIndex: number = 0;
 
   ruleEngine: RuleEngine;
+  effectManager: EffectManager;
+  
   currentPhase: GamePhase = 'SETUP';
   winner: string | null = null;
-
   isFinalRound: boolean = false;
   turnsAfterDeckEmpty: number = 0;
 
   constructor(cardMasterData: CardData[]) {
     this.board = new BoardModel();
     this.ruleEngine = new RuleEngine(this.board);
+    this.effectManager = new EffectManager(this);
     this.initializeDeck(cardMasterData);
   }
 
@@ -38,11 +36,16 @@ export class GameMaster {
     this.turnOrder.push(playerId);
   }
 
-  private initializeDeck(masterData: CardData[]): void {
+private initializeDeck(masterData: CardData[]): void {
     masterData.forEach(data => {
-      // ★修正: 設定ファイルの値を使用
-      for (let i = 0; i < GAME_CONFIG.CARD.COPIES_IN_DECK; i++) {
-        this.deck.push({ instanceId: uuidv4(), ownerId: 'SYSTEM', data: data });
+      // inDeck指定がない、またはtrueの場合のみデッキへ
+      if (data.inDeck !== false) {
+        // ★修正: レアリティに応じた枚数を取得
+        const copies = GAME_CONFIG.CARD.COPIES_BY_RARITY[data.rarity] ?? 1;
+        
+        for (let i = 0; i < copies; i++) {
+          this.deck.push({ instanceId: uuidv4(), ownerId: 'SYSTEM', data: data });
+        }
       }
     });
     this.shuffleDeck();
@@ -56,7 +59,6 @@ export class GameMaster {
   }
 
   startGame(): void {
-    // ★修正: 設定ファイルの値を使用
     this.turnOrder.forEach(pid => this.drawCard(pid, GAME_CONFIG.CARD.INITIAL_HAND));
     this.activePlayerIndex = -1;
     this.nextTurn();
@@ -79,7 +81,6 @@ export class GameMaster {
 
     let drawMsg = "";
     if (this.deck.length > 0) {
-      // ★修正: 設定ファイルの値を使用
       this.drawCard(currentPlayerId, GAME_CONFIG.CARD.DRAW_PER_TURN);
       drawMsg = `${GAME_CONFIG.CARD.DRAW_PER_TURN}枚ドロー。`;
     } else {
@@ -96,15 +97,6 @@ export class GameMaster {
     };
   }
 
-  private calculateIncome(playerId: string): number {
-    let income = 0;
-    this.board.getAllCards().forEach(({ card }) => {
-      if (card.ownerId === playerId) income += card.data.stats.tax;
-    });
-    // ★修正: 最低保証ロジックを削除（純粋な合計値のみ）
-    return income;
-  }
-  
   getCurrentPlayerId(): string {
     return this.turnOrder[this.activePlayerIndex];
   }
@@ -114,11 +106,7 @@ export class GameMaster {
     if (!player) return;
 
     for (let i = 0; i < count; i++) {
-      // ★追加: 手札上限チェック（設定値以上なら引けない）
-      if (player.getHand().length >= GAME_CONFIG.CARD.MAX_HAND) {
-         console.log("手札がいっぱいです");
-         break;
-      }
+      if (player.getHand().length >= GAME_CONFIG.CARD.MAX_HAND) break;
 
       if (this.deck.length > 0) {
         const card = this.deck.pop();
@@ -127,10 +115,7 @@ export class GameMaster {
           player.addCardToHand(card);
         }
       }
-      
-      if (this.deck.length === 0) {
-        this.isFinalRound = true;
-      }
+      if (this.deck.length === 0) this.isFinalRound = true;
     }
   }
 
@@ -154,24 +139,54 @@ export class GameMaster {
     player.addBudget(-card.data.cost);
     this.board.placeCard(card, pos);
 
+    this.effectManager.executeInstantEffects(playerId, card);
+
     return { success: true, message: `${playerId} は「${card.data.name}」を建設しました` };
   }
 
   discardFromHand(playerId: string, cardInstanceId: string): ActionResult {
     if (this.winner) return { success: false, message: "ゲーム終了済み" };
     if (playerId !== this.getCurrentPlayerId()) return { success: false, message: "手番ではありません" };
-
+    
     const player = this.players.get(playerId);
     if (!player) return { success: false, message: "エラー" };
 
     const card = player.removeCardFromHand(cardInstanceId);
     if (card) {
       this.discardPile.push(card);
-      // ★修正: 設定ファイルの値を使用
       player.addBudget(GAME_CONFIG.ECONOMY.DISCARD_BONUS);
       return { success: true, message: `${playerId} は「${card.data.name}」を売却して${GAME_CONFIG.ECONOMY.DISCARD_BONUS}金を得ました` };
     }
     return { success: false, message: "カードが見つかりません" };
+  }
+
+  getPlayerStats(playerId: string) {
+    const player = this.players.get(playerId);
+    if (!player) return { p1: 0, p2: 0, budget: 0 };
+    
+    let totalP1 = 0; 
+    let totalP2 = 0;
+    
+    this.board.getAllCards().forEach(({ card, pos }) => {
+      if (card.ownerId === playerId) {
+        const effectiveStats = this.effectManager.getEffectiveStats(card, pos);
+        totalP1 += effectiveStats.p1;
+        totalP2 += effectiveStats.p2;
+      }
+    });
+
+    return { p1: totalP1, p2: totalP2, budget: player.getBudget() };
+  }
+
+  private calculateIncome(playerId: string): number {
+    let income = 0;
+    this.board.getAllCards().forEach(({ card, pos }) => {
+      if (card.ownerId === playerId) {
+        const effectiveStats = this.effectManager.getEffectiveStats(card, pos);
+        income += effectiveStats.tax;
+      }
+    });
+    return income;
   }
 
   private finishGame() {
@@ -181,7 +196,10 @@ export class GameMaster {
 
     this.turnOrder.forEach(pid => {
       const stats = this.getPlayerStats(pid);
-      const cityPopulation = Math.min(stats.p1, stats.p2);
+      const bonus = this.effectManager.calculateEndGameBonus(pid);
+      const finalP1 = stats.p1 + bonus;
+
+      const cityPopulation = Math.min(finalP1, stats.p2);
       
       if (cityPopulation > bestScore) {
         bestScore = cityPopulation;
@@ -191,18 +209,5 @@ export class GameMaster {
       }
     });
     this.winner = winningPlayer;
-  }
-
-  getPlayerStats(playerId: string) {
-    const player = this.players.get(playerId);
-    if (!player) return { p1: 0, p2: 0, budget: 0 };
-    let totalP1 = 0; let totalP2 = 0;
-    this.board.getAllCards().forEach(({ card }) => {
-      if (card.ownerId === playerId) {
-        totalP1 += card.data.stats.p1;
-        totalP2 += card.data.stats.p2;
-      }
-    });
-    return { p1: totalP1, p2: totalP2, budget: player.getBudget() };
   }
 }
