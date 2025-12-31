@@ -116,3 +116,116 @@
 .hand-card-name { font-weight: bold; margin-top: 5px; text-align: center; }
 .hand-card-stats { font-size: 9px; display: flex; gap: 2px; color: #555; }
 .hand-card-arrow { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #333; }
+/* 既存のCSSの末尾に追加または修正してください */
+
+/* ★ メッセージエリア */
+.message-area {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.guide-message {
+  color: #333;
+  background: #eef;
+  padding: 8px 16px;
+  border-radius: 20px;
+  width: 90%;
+}
+
+.error-message {
+  color: white;
+  background: #d33;
+  padding: 8px 16px;
+  border-radius: 20px;
+  width: 90%;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+/* ★ ログエリア */
+.log-container {
+  width: 90%;
+  margin: 0 auto 10px auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f9f9f9;
+  text-align: left;
+}
+
+.log-title {
+  font-size: 10px;
+  background: #ddd;
+  padding: 2px 5px;
+  color: #555;
+}
+
+.log-list {
+  height: 60px; /* 固定高さ */
+  overflow-y: auto;
+  padding: 5px;
+  font-size: 11px;
+}
+
+.log-item {
+  border-bottom: 1px dashed #eee;
+  padding: 2px 0;
+}
+.log-item:first-child {
+  font-weight: bold;
+  color: #000;
+}
+
+/* リザルト画面用 */
+.result-stats {
+  font-size: 18px;
+  margin: 20px 0;
+  line-height: 2;
+}
+/* 既存のCSSの最後に追加 */
+
+/* スタート画面 */
+.start-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.start-screen h1 {
+  font-size: 32px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.mode-buttons button {
+  padding: 15px 30px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.mode-buttons button:hover {
+  transform: scale(1.05);
+  background: #0056b3;
+}

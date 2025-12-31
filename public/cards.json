@@ -1,0 +1,22 @@
+[
+  {
+    "id": "c001_apartment",
+    "name": "アパート",
+    "type": "RESIDENTIAL",
+    "rarity": "COMMON",
+    "cost": 2,
+    "stats": { "p1": 2, "p2": 0, "tax": 1 },
+    "arrows": ["UP"],
+    "description": "基本的な居住施設"
+  },
+  {
+    "id": "s001_town_hall",
+    "name": "役場",
+    "type": "PUBLIC",
+    "rarity": "COMMON",
+    "cost": 0,
+    "stats": { "p1": 1, "p2": 1, "tax": 2 },
+    "arrows": ["UP", "DOWN", "LEFT", "RIGHT"],
+    "description": "初期配置用"
+  }
+]
