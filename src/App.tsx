@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { GameMaster, type ActionResult } from './logic/GameMaster';
 import { AIUtils } from './logic/AIUtils';
+import { GAME_CONFIG } from './config'; // ★設定ファイルをインポート
 import type { CardData, CardEntity, Position } from './types';
 import './App.css';
 
 const ARROW_SYMBOLS: Record<string, string> = { UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" };
 const formatArrows = (arrows: string[]) => arrows.map(dir => ARROW_SYMBOLS[dir] || dir).join("");
 
+// マスターデータ（カードの種類定義）
 const MOCK_CARDS: CardData[] = [
   { id: "s001", name: "役場", type: "PUBLIC", rarity: "COMMON", cost: 0, stats: { p1: 1, p2: 1, tax: 2 }, arrows: ["UP", "DOWN", "LEFT", "RIGHT"] },
   { id: "c001", name: "アパート", type: "RESIDENTIAL", rarity: "COMMON", cost: 2, stats: { p1: 2, p2: 0, tax: 1 }, arrows: ["UP"] },
@@ -33,15 +35,16 @@ function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [gameWinner, setGameWinner] = useState<string | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
-  // ★追加: ラストターン表示用
   const [isFinalRound, setIsFinalRound] = useState(false);
 
+  // ゲーム開始
   const startGame = (mode: 'PvP' | 'PvC') => {
     setGameMode(mode);
     const gm = new GameMaster(MOCK_CARDS);
     gm.addPlayer("Player1");
     gm.addPlayer("Player2");
     
+    // 初期配置（対面配置）
     gm.board.placeCard({ instanceId: "p1_hall", ownerId: "Player1", data: MOCK_CARDS[0] }, { x: 0, y: 1 });
     gm.board.placeCard({ instanceId: "p2_hall", ownerId: "Player2", data: MOCK_CARDS[0] }, { x: 0, y: -1 });
 
@@ -52,6 +55,7 @@ function App() {
     syncState();
   };
 
+  // CPU思考ループ
   useEffect(() => {
     if (gameMode === 'PvC' && currentPlayerId === 'Player2' && !gameWinner && !isAiThinking) {
       runCpuTurn();
@@ -61,7 +65,8 @@ function App() {
   const runCpuTurn = async () => {
     if (!gmRef.current) return;
     setIsAiThinking(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 思考時間（設定ファイル値）待機
+    await new Promise(resolve => setTimeout(resolve, GAME_CONFIG.SYSTEM.AI_THINK_TIME));
 
     const move = AIUtils.getRandomMove(gmRef.current, 'Player2');
     if (move) {
@@ -79,6 +84,7 @@ function App() {
     }
 
     syncState();
+    // アクション後の余韻
     await new Promise(resolve => setTimeout(resolve, 800));
     handleEndTurn();
     setIsAiThinking(false);
@@ -110,11 +116,12 @@ function App() {
     setTopDiscard(gm.discardPile.length > 0 ? gm.discardPile[gm.discardPile.length - 1] : null);
     setBoardCards(gm.board.getAllCards());
     setGameWinner(gm.winner);
-    setIsFinalRound(gm.isFinalRound); // ★同期
+    setIsFinalRound(gm.isFinalRound);
 
     if (pid === 'Player1') {
       if (player) setHand(player.getHand());
     } else {
+      // CPU戦かつ相手ターンでも、プレイヤーの手札を表示しておく（操作は不可）
       if (gameMode === 'PvC' && pid === 'Player2') {
          const p1 = gm.players.get('Player1');
          if(p1) setHand(p1.getHand());
@@ -130,13 +137,11 @@ function App() {
   };
 
   const getGuideMessage = () => {
-    if (gameWinner) return "ゲーム終了";
+    if (gameWinner) return "決着！結果を確認してください。";
     if (gameMode === 'PvC' && currentPlayerId === 'Player2') return "CPUが思考中...";
     
     const budget = stats[currentPlayerId as keyof typeof stats]?.budget || 0;
-    
-    // ★山札切れ警告
-    const finalMsg = isFinalRound ? "【ファイナルラウンド】これが最後のターンです！ " : "";
+    const finalMsg = isFinalRound ? "【ファイナルラウンド】 " : "";
 
     return `${finalMsg}${currentPlayerId}の番です。コスト ${budget} までの建物を建設できます。`;
   };
@@ -177,10 +182,13 @@ function App() {
     }
   };
 
+  // 盤面描画（設定ファイルに基づいて動的生成）
   const renderGrid = () => {
     const grid = [];
-    for (let y = -2; y <= 2; y++) {
-      for (let x = -2; x <= 2; x++) {
+    const r = GAME_CONFIG.BOARD.RADIUS; // ★設定値を使用
+
+    for (let y = -r; y <= r; y++) {
+      for (let x = -r; x <= r; x++) {
         const placed = boardCards.find(c => c.pos.x === x && c.pos.y === y);
         grid.push(
           <div key={`${x},${y}`} className="grid-cell" onClick={() => handlePlaceCard(x, y)}>
@@ -200,6 +208,7 @@ function App() {
     return grid;
   };
 
+  // --- スタート画面 ---
   if (!gameMode) {
     return (
       <div className="container start-screen">
@@ -213,27 +222,10 @@ function App() {
     );
   }
 
-  if (gameWinner) {
-    // ★都市人口の計算
-    const p1Score = Math.min(stats.Player1.p1, stats.Player1.p2);
-    const p2Score = Math.min(stats.Player2.p1, stats.Player2.p2);
-
-    return (
-      <div className="container">
-        <h1>ゲーム終了！</h1>
-        <h2>勝者: {gameWinner === 'DRAW' ? '引き分け' : gameWinner}</h2>
-        <div className="result-stats">
-          <div>Player1 都市人口: <strong>{p1Score}</strong> (👤{stats.Player1.p1}, ⚡{stats.Player1.p2})</div>
-          <div>Player2 都市人口: <strong>{p2Score}</strong> (👤{stats.Player2.p1}, ⚡{stats.Player2.p2})</div>
-          <div style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>※都市人口 = 人口とインフラの低い方の値</div>
-        </div>
-        <div className="log-area" style={{height: '200px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px'}}>
-          {logs.map((l, i) => <div key={i}>{l}</div>)}
-        </div>
-        <button onClick={() => setGameMode(null)} style={{marginTop: '20px', padding: '10px'}}>タイトルに戻る</button>
-      </div>
-    );
-  }
+  // 結果計算用
+  const p1Score = Math.min(stats.Player1.p1, stats.Player1.p2);
+  const p2Score = Math.min(stats.Player2.p1, stats.Player2.p2);
+  const boardSize = GAME_CONFIG.BOARD.RADIUS * 2 + 1; // 盤面の1辺のマス数
 
   return (
     <div className="container">
@@ -258,7 +250,16 @@ function App() {
       </div>
 
       <div className="main-area">
-        <div className="board-area">{renderGrid()}</div>
+        {/* CSS変数またはインラインスタイルでグリッド数を制御 */}
+        <div 
+          className="board-area" 
+          style={{ 
+            gridTemplateColumns: `repeat(${boardSize}, 60px)`,
+            gridTemplateRows: `repeat(${boardSize}, 60px)`
+          }}
+        >
+          {renderGrid()}
+        </div>
       </div>
 
       <div className="log-container">
@@ -269,26 +270,57 @@ function App() {
       </div>
 
       <div className="control-area">
-        <button 
-          onClick={handleEndTurn} 
-          disabled={gameMode === 'PvC' && currentPlayerId === 'Player2'}
-        >
-          ターン終了
-        </button>
-        <button 
-          onClick={handleDiscard} 
-          disabled={!selectedCardId || (gameMode === 'PvC' && currentPlayerId === 'Player2')}
-        >
-          捨てて+2金
-        </button>
+        {gameWinner ? (
+          <button className="btn-title" onClick={() => setGameMode(null)}>タイトルに戻る</button>
+        ) : (
+          <>
+            <button 
+              onClick={handleEndTurn} 
+              disabled={gameMode === 'PvC' && currentPlayerId === 'Player2'}
+            >
+              ターン終了
+            </button>
+            <button 
+              onClick={handleDiscard} 
+              disabled={!selectedCardId || (gameMode === 'PvC' && currentPlayerId === 'Player2')}
+            >
+              捨てて+{GAME_CONFIG.ECONOMY.DISCARD_BONUS}金
+            </button>
+          </>
+        )}
       </div>
+
+      {/* 結果表示エリア（ボタンの下に埋め込み配置） */}
+      {gameWinner && (
+        <div className="result-overlay">
+           <div className="result-box">
+              <h2 className="result-title">ゲーム終了！</h2>
+              <div className="result-winner">
+                勝者: <span className="winner-name">{gameWinner === 'DRAW' ? '引き分け' : gameWinner}</span>
+              </div>
+              
+              <div className="result-detail">
+                <div className={gameWinner === 'Player1' ? 'winner-text' : ''}>
+                  Player1 都市人口: <strong>{p1Score}</strong> (👤{stats.Player1.p1}, ⚡{stats.Player1.p2})
+                </div>
+                <div className={gameWinner === 'Player2' ? 'winner-text' : ''}>
+                  Player2 都市人口: <strong>{p2Score}</strong> (👤{stats.Player2.p1}, ⚡{stats.Player2.p2})
+                </div>
+              </div>
+              
+              <p className="result-note">※都市人口 = 人口とインフラの低い方の値</p>
+           </div>
+        </div>
+      )}
 
       <div className="hand-area">
         {hand.map(card => (
           <div 
             key={card.instanceId} 
             className={`hand-card ${selectedCardId === card.instanceId ? 'selected' : ''}`}
-            onClick={() => setSelectedCardId(card.instanceId)}
+            onClick={() => {
+              if(!gameWinner) setSelectedCardId(card.instanceId)
+            }}
           >
             <div className="hand-cost-badge">{card.data.cost}</div>
             <div className="hand-card-name">{card.data.name}</div>
