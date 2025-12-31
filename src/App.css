@@ -1,0 +1,118 @@
+.container {
+  text-align: center;
+  font-family: sans-serif;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* ヘッダー：コンパクトに見やすく */
+.header {
+  display: flex;
+  justify-content: space-between;
+  background: #333;
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+.status-box.active { color: yellow; font-weight: bold; border-bottom: 2px solid yellow; }
+.deck-info { color: #aaa; font-size: 12px; }
+
+/* 盤面エリア */
+.board-area {
+  display: grid;
+  grid-template-columns: repeat(5, 60px); /* 60pxに戻しました */
+  grid-template-rows: repeat(5, 60px);
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.grid-cell {
+  width: 60px; height: 60px;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* 盤上のカード（要素をギュッと詰める） */
+.card-on-board {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  color: white;
+  font-size: 10px;
+  line-height: 1.1;
+  transition: transform 0.3s ease;
+}
+
+/* 盤上のテキストサイズ調整 */
+.board-card-name { font-weight: bold; font-size: 9px; margin-bottom: 1px; }
+.board-card-stats { font-size: 7px; opacity: 0.9; } /* 数値は小さく */
+.board-card-arrow { font-size: 12px; font-weight: bold; margin-top: 1px; }
+
+/* プレイヤー色分け */
+.owner-Player1 { border: 2px solid red; }
+.owner-Player2 { border: 2px solid blue; transform: rotate(180deg); }
+
+/* 背景色 */
+.type-PUBLIC { background-color: orange; }
+.type-RESIDENTIAL { background-color: green; }
+.type-INFRASTRUCTURE { background-color: navy; }
+.type-COMMERCIAL { background-color: teal; }
+
+/* コントロール */
+.control-area { margin-bottom: 10px; }
+.control-area button { margin: 0 5px; padding: 5px 10px; cursor: pointer; }
+
+/* 手札エリア */
+.hand-area {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+  background: #f4f4f4;
+  border-radius: 8px;
+}
+
+/* 手札カード（以前のスタイル＋情報追加） */
+.hand-card {
+  width: 70px; height: 90px;
+  background: white;
+  border: 2px solid #555;
+  border-radius: 6px;
+  padding: 2px;
+  cursor: pointer;
+  position: relative; /* コストバッジ用 */
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+.hand-card.selected {
+  border-color: red;
+  background-color: #fff0f0;
+  transform: translateY(-3px);
+}
+
+/* 手札内の要素 */
+.hand-cost-badge {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: red; color: white;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  text-align: center; line-height: 18px;
+  font-weight: bold; font-size: 10px;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.hand-card-name { font-weight: bold; margin-top: 5px; text-align: center; }
+.hand-card-stats { font-size: 9px; display: flex; gap: 2px; color: #555; }
+.hand-card-arrow { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #333; }
