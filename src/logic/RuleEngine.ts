@@ -16,8 +16,9 @@ export class RuleEngine {
     cardCost: number
   ): { valid: boolean; reason?: string } {
     
-    // ★追加: 盤面範囲チェック
-    if (Math.abs(pos.x) > GAME_CONFIG.BOARD.RADIUS || Math.abs(pos.y) > GAME_CONFIG.BOARD.RADIUS) {
+    // ★修正: 盤面範囲チェック (5x6対応)
+    if (pos.x < GAME_CONFIG.BOARD.X_MIN || pos.x > GAME_CONFIG.BOARD.X_MAX ||
+        pos.y < GAME_CONFIG.BOARD.Y_MIN || pos.y > GAME_CONFIG.BOARD.Y_MAX) {
       return { valid: false, reason: '盤面の範囲外です' };
     }
 

@@ -1,0 +1,105 @@
+/* src/components/RuleModal.css */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: white;
+  color: #333;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  padding: 16px 24px;
+  background: #f0f4f8;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0 8px;
+}
+
+.close-button:hover {
+  color: #e74c3c;
+  background: none;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  text-align: left;
+  line-height: 1.6;
+}
+
+.modal-body section {
+  margin-bottom: 24px;
+}
+
+.modal-body h3 {
+  border-left: 4px solid #3498db;
+  padding-left: 10px;
+  margin-bottom: 12px;
+  color: #2980b9;
+  font-size: 1.1rem;
+}
+
+.modal-body ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.modal-body li {
+  margin-bottom: 8px;
+}
+
+.highlight-text {
+  color: #e74c3c;
+  font-weight: bold;
+  background: #fff0f0;
+  padding: 0 4px;
+}
+
+.modal-footer {
+  padding: 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  background: #fff;
+}

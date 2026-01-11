@@ -1,19 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { GameMaster } from './logic/GameMaster';
 import { AIUtils } from './logic/AIUtils';
+import type { AIDifficulty } from './logic/AIUtils'; // ★修正: 型としてインポート
 import { GAME_CONFIG } from './config';
 import { CARD_MASTER_DATA } from './data/cards';
+import { RuleModal } from './components/RuleModal';
 import type { CardData, CardEntity, Position, ActionResult } from './types';
 import './App.css';
+
 
 const ARROW_SYMBOLS: Record<string, string> = { UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" };
 const formatArrows = (arrows: string[]) => arrows.map(dir => ARROW_SYMBOLS[dir] || dir).join("");
 
 function App() {
   const gmRef = useRef<GameMaster | null>(null);
-  
+  const [showRules, setShowRules] = useState(false);
   // --- State ---
   const [gameMode, setGameMode] = useState<'PvP' | 'PvC' | null>(null);
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('NORMAL');
+
   const [currentPlayerId, setCurrentPlayerId] = useState("");
   const [hand, setHand] = useState<CardEntity[]>([]);
   const [boardCards, setBoardCards] = useState<{ pos: Position; card: CardEntity }[]>([]);
@@ -21,7 +26,7 @@ function App() {
   const [topDiscard, setTopDiscard] = useState<CardEntity | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
-  // ★詳細表示用（インフォメーションパネルに表示するカードデータ）
+  // 詳細表示用
   const [inspectCard, setInspectCard] = useState<CardData | null>(null);
 
   const [stats, setStats] = useState({
@@ -35,8 +40,10 @@ function App() {
   const [isFinalRound, setIsFinalRound] = useState(false);
 
   // --- ゲーム開始・初期化 ---
-  const startGame = (mode: 'PvP' | 'PvC') => {
+  const startGame = (mode: 'PvP' | 'PvC', difficulty: AIDifficulty = 'NORMAL') => {
     setGameMode(mode);
+    setAiDifficulty(difficulty);
+
     const gm = new GameMaster(CARD_MASTER_DATA); 
     gm.addPlayer("Player1");
     gm.addPlayer("Player2");
@@ -44,12 +51,15 @@ function App() {
     // 初期配置（役場）
     const townHallData = CARD_MASTER_DATA.find(c => c.category === 'TOWN_HALL')!;
     gm.board.placeCard({ instanceId: "p1_hall", ownerId: "Player1", data: townHallData }, { x: 0, y: 1 });
-    gm.board.placeCard({ instanceId: "p2_hall", ownerId: "Player2", data: townHallData }, { x: 0, y: -1 });
+    gm.board.placeCard({ instanceId: "p2_hall", ownerId: "Player2", data: townHallData }, { x: -1, y: -1 });
 
     gm.startGame();
     gmRef.current = gm;
+    
     setLogs([]);
-    addLog(`ゲーム開始！ モード: ${mode === 'PvP' ? '対人戦' : 'CPU対戦'}`);
+    const modeLabel = mode === 'PvP' ? '対人戦' : `CPU戦 (難易度: ${difficulty})`;
+    addLog(`ゲーム開始！ モード: ${modeLabel}`);
+    
     syncState();
   };
 
@@ -63,26 +73,32 @@ function App() {
   const runCpuTurn = async () => {
     if (!gmRef.current) return;
     setIsAiThinking(true);
-    await new Promise(resolve => setTimeout(resolve, GAME_CONFIG.SYSTEM.AI_THINK_TIME));
     
-    const move = AIUtils.getRandomMove(gmRef.current, 'Player2');
+    // 思考中演出
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // AI思考 (難易度を渡す)
+    const move = await AIUtils.getBestMove(gmRef.current, 'Player2', aiDifficulty);
+    
     if (move) {
       const result = gmRef.current.playCard('Player2', move.cardInstanceId, move.pos);
       showSystemMessage(result);
-      // CPUがカードを出した時、そのカードをInspectにセットして見せる演出も可能ですが
-      // ここではシンプルにするため省略します
     } else {
+      // 最善手が見つからない場合は手札を捨てる
       const p2Hand = gmRef.current.players.get('Player2')?.getHand() || [];
       if (p2Hand.length > 0) {
         const discardCard = p2Hand[0];
-        const result = gmRef.current.discardFromHand('Player2', discardCard.instanceId);
-        addLog(`(CPU) ${result.message}`);
+        // ★修正: 結果を変数で受け取らず直接実行（未使用警告対策）
+        gmRef.current.discardFromHand('Player2', discardCard.instanceId);
+        addLog(`(CPU) 予算確保のため ${discardCard.data.name} を破棄しました`);
       } else {
-        addLog("(CPU) 何もできませんでした。");
+        addLog("(CPU) 行動できませんでした。");
       }
     }
+    
     syncState();
     await new Promise(resolve => setTimeout(resolve, 800));
+    
     handleEndTurn();
     setIsAiThinking(false);
   };
@@ -133,7 +149,7 @@ function App() {
 
   const getGuideMessage = () => {
     if (gameWinner) return "決着！";
-    if (gameMode === 'PvC' && currentPlayerId === 'Player2') return "CPUが思考中...";
+    if (gameMode === 'PvC' && currentPlayerId === 'Player2') return `CPU(${aiDifficulty})が思考中...`;
     const budget = stats[currentPlayerId as keyof typeof stats]?.budget || 0;
     const finalMsg = isFinalRound ? "【ファイナルラウンド】 " : "";
     return `${finalMsg}${currentPlayerId}の番です。コスト ${budget} までの建物を建設できます。`;
@@ -141,16 +157,13 @@ function App() {
 
   // --- イベントハンドラ ---
 
-  // 盤面のセルクリック
   const handlePlaceCard = (x: number, y: number) => {
-    // 1. 既にカードがある場合 -> そのカードの詳細を表示
     const placed = boardCards.find(c => c.pos.x === x && c.pos.y === y);
     if (placed) {
       setInspectCard(placed.card.data);
-      return; // 配置処理はしない
+      return; 
     }
 
-    // 2. 空きマスの場合 -> カード配置を試みる
     if (gameWinner || (gameMode === 'PvC' && currentPlayerId === 'Player2')) return;
     if (!selectedCardId || !gmRef.current) return;
 
@@ -159,19 +172,17 @@ function App() {
     
     if (result.success) {
       setSelectedCardId(null);
-      setInspectCard(null); // 配置後は詳細表示をクリア（任意）
+      setInspectCard(null); 
       syncState();
     }
   };
 
-  // 手札クリック
   const handleHandClick = (card: CardEntity) => {
     if (gameWinner) return;
-    // CPUの手番中は操作不可（自分の手札が見えていても）
     if (gameMode === 'PvC' && currentPlayerId === 'Player2') return;
 
     setSelectedCardId(card.instanceId);
-    setInspectCard(card.data); // 詳細パネルに表示
+    setInspectCard(card.data); 
   };
 
   const handleEndTurn = () => {
@@ -198,9 +209,7 @@ function App() {
   };
 
   // --- サブコンポーネント: カード表示 ---
-  // 画像がある場合は画像、なければ従来のテキストUIを表示
-const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
-    // 画像がある場合は背景画像としてスタイルを作成
+  const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
     const bgStyle = data.image 
       ? { 
           backgroundImage: `url(/images/${data.image})`,
@@ -211,24 +220,19 @@ const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
 
     return (
       <div 
-        // 共通クラスとカテゴリごとの枠線を適用
         className={`card-text-view category-${data.category}`} 
         style={bgStyle}
       >
-        {/* 文字情報をオーバーレイ用のクラスで囲む（CSSで文字色や縁取りを制御） */}
         <div className="card-content-overlay">
           <div className="card-name">{data.name}</div>
-          
           <div className="card-stats-row">
             👤{data.stats.p1} ⚡{data.stats.p2} 💰{data.stats.tax}
           </div>
-          
           <div className="card-arrow-overlay">
             {formatArrows(data.arrows)}
           </div>
         </div>
 
-        {/* 効果ありマーク */}
         {data.effects && data.effects.length > 0 && (
           <div 
             style={{
@@ -245,15 +249,51 @@ const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
   };
 
   // --- グリッド描画 ---
+// --- グリッド描画 ---
   const renderGrid = () => {
     const grid = [];
-    const r = GAME_CONFIG.BOARD.RADIUS;
+    const { X_MIN, X_MAX, Y_MIN, Y_MAX } = GAME_CONFIG.BOARD;
 
-    for (let y = -r; y <= r; y++) {
-      for (let x = -r; x <= r; x++) {
+    // ★追加: 選択中のカードがあれば、そのコストと配置可能判定の準備をする
+    let selectedCardData: CardEntity | undefined;
+    if (selectedCardId && gmRef.current) {
+      // プレイヤーの手札から探す（自分の手番のみ）
+      if (currentPlayerId === 'Player1') { // 自分の手番だけハイライト
+         const player = gmRef.current.players.get('Player1');
+         selectedCardData = player?.getHand().find(c => c.instanceId === selectedCardId);
+      }
+    }
+    
+    // 現在の予算（配置判定用）
+    const currentBudget = stats[currentPlayerId as keyof typeof stats]?.budget || 0;
+
+    for (let y = Y_MIN; y <= Y_MAX; y++) {
+      for (let x = X_MIN; x <= X_MAX; x++) {
         const placed = boardCards.find(c => c.pos.x === x && c.pos.y === y);
+        
+        // ★追加: ハイライト判定
+        let highlightClass = "";
+        if (selectedCardData && !placed && gmRef.current) {
+          // RuleEngineを使って配置可能かチェック
+          // ※ここで全マス判定するのは計算量的に軽微(5x6=30回)なので問題なし
+          const check = gmRef.current.ruleEngine.canPlaceCard(
+            currentPlayerId, 
+            { x, y }, 
+            currentBudget, 
+            selectedCardData.data.cost
+          );
+          
+          if (check.valid) {
+            highlightClass = "highlight-valid";
+          }
+        }
+
         grid.push(
-          <div key={`${x},${y}`} className="grid-cell" onClick={() => handlePlaceCard(x, y)}>
+          <div 
+            key={`${x},${y}`} 
+            className={`grid-cell ${highlightClass}`} // ★クラス適用
+            onClick={() => handlePlaceCard(x, y)}
+          >
             {placed ? (
               <div className={`card-wrapper owner-${placed.card.ownerId}`}>
                  <CardView data={placed.card.data} ownerId={placed.card.ownerId} />
@@ -267,21 +307,45 @@ const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
   };
 
   // --- タイトル画面 ---
-  if (!gameMode) {
+if (!gameMode) {
     return (
       <div className="container start-screen">
         <h1>Cross City Minimal</h1>
+        
         <div className="mode-buttons">
-          <button onClick={() => startGame('PvP')}>二人で対戦 (PvP)</button>
-          <button onClick={() => startGame('PvC')}>コンピュータと対戦 (PvC)</button>
+          {/* PvP ボタン */}
+          <button className="btn-pvp" onClick={() => startGame('PvP')}>
+            二人で対戦 (PvP)
+          </button>
+          
+          {/* PvC セクション */}
+          <div className="cpu-buttons">
+            <p>コンピュータと対戦 (PvC)</p>
+            <div className="difficulty-row">
+              <button className="btn-level" onClick={() => startGame('PvC', 'EASY')}>弱い (Easy)</button>
+              <button className="btn-level" onClick={() => startGame('PvC', 'NORMAL')}>普通 (Normal)</button>
+              <button className="btn-level" onClick={() => startGame('PvC', 'HARD')}>強い (Hard)</button>
+            </div>
+          </div>
         </div>
+
+        {/* ルール説明ボタン (ここに統合) */}
+        <div style={{ marginTop: '24px' }}>
+          <button className="secondary-button" onClick={() => setShowRules(true)}>
+            📖 ルール説明
+          </button>
+        </div>
+
+        {/* ルールモーダル (この画面でも表示できるように配置) */}
+        <RuleModal show={showRules} onClose={() => setShowRules(false)} />
       </div>
     );
   }
-
   const p1Score = Math.min(stats.Player1.p1, stats.Player1.p2);
   const p2Score = Math.min(stats.Player2.p1, stats.Player2.p2);
-  const boardSize = GAME_CONFIG.BOARD.RADIUS * 2 + 1;
+  
+  const boardCols = GAME_CONFIG.BOARD.COLS;
+  const boardRows = GAME_CONFIG.BOARD.ROWS;
 
   // --- メイン画面 ---
   return (
@@ -304,15 +368,15 @@ const CardView = ({ data }: { data: CardData, ownerId?: string }) => {
         <div 
           className="board-area" 
           style={{ 
-            gridTemplateColumns: `repeat(${boardSize}, 60px)`, 
-            gridTemplateRows: `repeat(${boardSize}, 60px)` 
+            gridTemplateColumns: `repeat(${boardCols}, 60px)`, 
+            gridTemplateRows: `repeat(${boardRows}, 60px)` 
           }}
         >
           {renderGrid()}
         </div>
       </div>
 
-      {/* ★インフォメーションパネル（選択カード詳細） */}
+      {/* インフォメーションパネル */}
       <div className="info-panel">
         {inspectCard ? (
           <div className="info-content">

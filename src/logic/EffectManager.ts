@@ -1,11 +1,9 @@
 import { GameMaster } from './GameMaster';
-import type { CardEntity, Position} from '../types'; // ★修正: type を追加
+import type { CardEntity, Position } from '../types';
 
 export class EffectManager {
-  // ★修正: プロパティを明示的に宣言
   private gm: GameMaster;
 
-  // ★修正: コンストラクタでの省略記法を廃止
   constructor(gm: GameMaster) {
     this.gm = gm;
   }
@@ -55,6 +53,34 @@ export class EffectManager {
     });
 
     return currentStats;
+  }
+
+  // ★追加: 収入計算（GameMasterから移動）
+  calculateIncome(playerId: string): number {
+    let income = 0;
+    this.gm.board.getAllCards().forEach(({ card, pos }) => {
+      if (card.ownerId === playerId) {
+        const effectiveStats = this.getEffectiveStats(card, pos);
+        income += effectiveStats.tax;
+      }
+    });
+    return income;
+  }
+
+  // ★追加: プレイヤーの現在の統計値（人口・インフラ）を計算
+  calculateStats(playerId: string): { population: number, infrastructure: number } {
+    let totalP1 = 0; 
+    let totalP2 = 0;
+    
+    this.gm.board.getAllCards().forEach(({ card, pos }) => {
+      if (card.ownerId === playerId) {
+        const effectiveStats = this.getEffectiveStats(card, pos);
+        totalP1 += effectiveStats.p1;
+        totalP2 += effectiveStats.p2;
+      }
+    });
+
+    return { population: totalP1, infrastructure: totalP2 };
   }
 
   // エンドゲーム効果による加点

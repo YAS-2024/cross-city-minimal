@@ -1,48 +1,110 @@
+// (import部分は変更なし)
 import { v4 as uuidv4 } from 'uuid';
 import { BoardModel } from '../models/BoardModel';
 import { PlayerModel } from '../models/PlayerModel';
 import { RuleEngine } from './RuleEngine';
 import { EffectManager } from './EffectManager';
 import { GAME_CONFIG } from '../config';
-// ★修正: ActionResult をここに追加
 import type { CardData, CardEntity, Position, GamePhase, ActionResult } from '../types';
 
 export class GameMaster {
+  // (プロパティ定義は変更なし)
   board: BoardModel;
   deck: CardEntity[] = [];
   discardPile: CardEntity[] = [];
   players: Map<string, PlayerModel> = new Map();
   turnOrder: string[] = [];
   activePlayerIndex: number = 0;
-
   ruleEngine: RuleEngine;
   effectManager: EffectManager;
-  
   currentPhase: GamePhase = 'SETUP';
   winner: string | null = null;
   isFinalRound: boolean = false;
   turnsAfterDeckEmpty: number = 0;
 
-  constructor(cardMasterData: CardData[]) {
+  // (コンストラクタ、cloneは変更なし)
+  constructor(cardMasterData?: CardData[]) {
     this.board = new BoardModel();
     this.ruleEngine = new RuleEngine(this.board);
     this.effectManager = new EffectManager(this);
-    this.initializeDeck(cardMasterData);
+    if (cardMasterData) {
+      this.initializeDeck(cardMasterData);
+    }
   }
 
+  public clone(): GameMaster {
+    const newGM = new GameMaster();
+    newGM.board = this.board.clone();
+    newGM.players = new Map();
+    this.players.forEach((p, id) => {
+      newGM.players.set(id, p.clone());
+    });
+    newGM.deck = this.deck.map(c => ({ ...c }));
+    newGM.discardPile = this.discardPile.map(c => ({ ...c }));
+    newGM.turnOrder = [...this.turnOrder];
+    newGM.activePlayerIndex = this.activePlayerIndex;
+    newGM.isFinalRound = this.isFinalRound;
+    newGM.turnsAfterDeckEmpty = this.turnsAfterDeckEmpty;
+    newGM.winner = this.winner;
+    newGM.ruleEngine = new RuleEngine(newGM.board);
+    newGM.effectManager = new EffectManager(newGM);
+    return newGM;
+  }
+
+  // ★追加: シミュレーション用に未知情報（山札＋相手手札）をランダム化する
+  public randomizeUnknowns(viewingPlayerId: string) {
+    // 1. 未知のカードを全て回収する
+    const unknownCards: CardEntity[] = [...this.deck];
+    
+    // 相手プレイヤーの手札も未知情報として回収
+    this.players.forEach(p => {
+      if (p.id !== viewingPlayerId) {
+        unknownCards.push(...p.getHand());
+      }
+    });
+
+    // 2. シャッフル
+    for (let i = unknownCards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unknownCards[i], unknownCards[j]] = [unknownCards[j], unknownCards[i]];
+    }
+
+    // 3. 再分配
+    // まず山札を空にする
+    this.deck = [];
+
+    // 相手プレイヤーにカードを配り直す
+    this.players.forEach(p => {
+      if (p.id !== viewingPlayerId) {
+        const handSize = p.getHand().length;
+        p.clearHand(); // 手札を一度空にする
+        
+        for(let i=0; i<handSize; i++) {
+            const card = unknownCards.pop();
+            if(card) p.addCardToHand(card);
+        }
+      }
+    });
+    
+    // 残りを山札に戻す
+    this.deck = unknownCards;
+  }
+
+  // (以下、既存メソッドは変更なし)
+  // addPlayer, initializeDeck, shuffleDeck, startGame, nextTurn, 
+  // getCurrentPlayerId, drawCard, playCard, discardFromHand, 
+  // getPlayerStats, getPlayerScore, finishGame ...
+  
   addPlayer(playerId: string): void {
     const player = new PlayerModel(playerId);
     this.players.set(playerId, player);
     this.turnOrder.push(playerId);
   }
 
-private initializeDeck(masterData: CardData[]): void {
+  private initializeDeck(masterData: CardData[]): void {
     masterData.forEach(data => {
-      // inDeck指定がない、またはtrueの場合のみデッキへ
       if (data.inDeck !== false) {
-        // ★修正: レアリティに応じた枚数を取得
         const copies = GAME_CONFIG.CARD.COPIES_BY_RARITY[data.rarity] ?? 1;
-        
         for (let i = 0; i < copies; i++) {
           this.deck.push({ instanceId: uuidv4(), ownerId: 'SYSTEM', data: data });
         }
@@ -88,7 +150,7 @@ private initializeDeck(masterData: CardData[]): void {
       drawMsg = "山札なし！最後のターンです。";
     }
     
-    const income = this.calculateIncome(currentPlayerId);
+    const income = this.effectManager.calculateIncome(currentPlayerId);
     player.setBudget(income);
 
     return { 
@@ -162,31 +224,13 @@ private initializeDeck(masterData: CardData[]): void {
 
   getPlayerStats(playerId: string) {
     const player = this.players.get(playerId);
-    if (!player) return { p1: 0, p2: 0, budget: 0 };
-    
-    let totalP1 = 0; 
-    let totalP2 = 0;
-    
-    this.board.getAllCards().forEach(({ card, pos }) => {
-      if (card.ownerId === playerId) {
-        const effectiveStats = this.effectManager.getEffectiveStats(card, pos);
-        totalP1 += effectiveStats.p1;
-        totalP2 += effectiveStats.p2;
-      }
-    });
-
-    return { p1: totalP1, p2: totalP2, budget: player.getBudget() };
+    const stats = this.effectManager.calculateStats(playerId);
+    return { p1: stats.population, p2: stats.infrastructure, budget: player ? player.getBudget() : 0 };
   }
 
-  private calculateIncome(playerId: string): number {
-    let income = 0;
-    this.board.getAllCards().forEach(({ card, pos }) => {
-      if (card.ownerId === playerId) {
-        const effectiveStats = this.effectManager.getEffectiveStats(card, pos);
-        income += effectiveStats.tax;
-      }
-    });
-    return income;
+  getPlayerScore(playerId: string): number {
+    const stats = this.effectManager.calculateStats(playerId);
+    return Math.min(stats.population, stats.infrastructure);
   }
 
   private finishGame() {
@@ -195,11 +239,11 @@ private initializeDeck(masterData: CardData[]): void {
     let winningPlayer = null;
 
     this.turnOrder.forEach(pid => {
-      const stats = this.getPlayerStats(pid);
+      const stats = this.effectManager.calculateStats(pid);
       const bonus = this.effectManager.calculateEndGameBonus(pid);
-      const finalP1 = stats.p1 + bonus;
-
-      const cityPopulation = Math.min(finalP1, stats.p2);
+      const finalP1 = stats.population + bonus;
+      
+      const cityPopulation = Math.min(finalP1, stats.infrastructure);
       
       if (cityPopulation > bestScore) {
         bestScore = cityPopulation;
