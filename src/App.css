@@ -531,7 +531,7 @@
 
 /* --- ハイライト用スタイル --- */
 .grid-cell.highlight-valid {
-  background-color: rgba(129, 199, 132, 0.6) !important; /* 明るい緑 */
+  background-color: rgba(251, 165, 228, 0.925) !important; /* 明るい緑 */
   border: 2px solid #2e7d32;
   box-shadow: 0 0 8px rgba(46, 125, 50, 0.6);
   animation: pulse-border 1.5s infinite;

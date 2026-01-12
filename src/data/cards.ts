@@ -19,14 +19,21 @@ export const CARD_MASTER_DATA: CardData[] = [
     image: "slum.png", // 画像変更推奨
     stats: { p1: 1, p2: 0, tax: 0 }, 
     arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
-    description: "学生が多く住む街。税収は無いが、安価に人口を増やせる。"
+    description: "学生が多く住む街。学生は申請により国民年金保険料の支払いを免除できる。"
   },
   { 
     id: "apartment", name: "アパート", category: "RESIDENTIAL", rarity: "COMMON", cost: 2, 
     image: "apartment.png",
     stats: { p1: 3, p2: 0, tax: 1 }, 
     arrows: ["UP"], 
-    description: "標準的な住居。コストが下がり使いやすくなった。"
+    description: "標準的な住居。"
+  },
+  { 
+    id: "middle_class_area", name: "住宅地", category: "RESIDENTIAL", rarity: "UNCOMMON", cost: 2, 
+    image: "slum.png", // 画像変更推奨
+    stats: { p1: 1, p2: 0, tax: 1 }, 
+    arrows: ["RIGHT"], 
+    description: "一軒家が多く並ぶ土地。"
   },
   { 
     id: "mansion", name: "マンション", category: "RESIDENTIAL", rarity: "UNCOMMON", cost: 5, 

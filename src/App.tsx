@@ -334,7 +334,7 @@ function App() {
           </button>
         </div>
 
-        <div className="copyright">© 2024 Cross-City Project</div>
+        <div className="copyright">© 2026 Cross-City Project</div>
 
         {/* ルールモーダル */}
         <RuleModal show={showRules} onClose={() => setShowRules(false)} />
