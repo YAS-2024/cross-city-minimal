@@ -145,7 +145,8 @@
 }
 .hand-cost-badge {
   position: absolute;
-  top: -5px; left: -5px;
+  top: -5px;
+  right: -5px;
   width: 18px; height: 18px;
   background: red; color: white;
   border-radius: 50%;
@@ -154,6 +155,7 @@
   line-height: 18px;
   font-weight: bold;
   z-index: 10;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* --- ★インフォメーションパネル --- */
@@ -217,23 +219,6 @@
 .board-card-stats { font-size: 7px; opacity: 0.9; }
 .board-card-arrow { font-size: 12px; font-weight: bold; margin-top: 1px; }
 
-.owner-Player1 { border: 2px solid red; }
-.owner-Player2 { border: 2px solid blue; transform: rotate(180deg); }
-.category-TOWN_HALL {
-  background-color: #ffaa00; /* オレンジ/金 */
-  border: 2px solid #b87900;
-}
-
-.category-RESIDENTIAL {
-  background-color: #2e7d32; /* 緑 */
-  border: 2px solid #1b5e20;
-}
-
-.category-NON_RESIDENTIAL {
-  background-color: #1976d2; /* 青 */
-  border: 2px solid #0d47a1;
-}
-
 
 /* ログエリア */
 .log-container {
@@ -283,43 +268,6 @@
   border-radius: 8px;
 }
 
-.hand-card {
-  width: 70px; height: 90px;
-  background: white;
-  border: 2px solid #555;
-  border-radius: 6px;
-  padding: 2px;
-  cursor: pointer;
-  position: relative;
-  display: flex; flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-}
-
-.hand-card.selected {
-  border-color: red;
-  background-color: #fff0f0;
-  transform: translateY(-3px);
-}
-
-.hand-cost-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px; /* ★修正: left から right に変更 */
-  /* left: -5px;  <-- これを削除または auto に */
-  
-  width: 18px; height: 18px;
-  background: red; color: white;
-  border-radius: 50%;
-  text-align: center;
-  font-size: 11px;
-  line-height: 18px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* 見やすくするため影を追加 */
-}
 /* --- カード共通 --- */
 /* 画像の上に文字を乗せるため、共通で見やすいスタイルを定義 */
 .card-content-overlay {
@@ -350,40 +298,161 @@
 .hand-card-stats { font-size: 9px; display: flex; gap: 2px; color: #555; }
 .hand-card-arrow { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #333; }
 
-/* スタート画面 */
+/* ------------------------------------------- */
+/* ★ スタート画面（全画面背景＆リニューアル） ★ */
+/* ------------------------------------------- */
+
 .start-screen {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-}
-
-.start-screen h1 {
-  font-size: 32px;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.mode-buttons {
-  display: flex;
-  gap: 20px;
-}
-
-.mode-buttons button {
-  padding: 15px 30px;
-  font-size: 16px;
-  cursor: pointer;
-  background: #007bff;
+  width: 100vw;
+  
+  /* 画像を背景に設定（public/title_bg.png を参照） */
+  background-image: url('/title_bg.png');
+  background-size: cover;
+  background-position: center;
+  
+  /* 文字を見やすくするための暗幕（必要に応じて調整） */
+  background-color: rgba(0,0,0,0.2); 
+  background-blend-mode: overlay;
+  
   color: white;
-  border: none;
-  border-radius: 8px;
+  overflow: hidden; /* スクロールバー防止 */
+}
+
+/* タイトルロゴ装飾 */
+.title-logo {
+  font-size: 80px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 40px;
+  
+  /* ポップで力強い縁取りと影 */
+  text-shadow: 
+    3px 3px 0px #b87900, 
+    -3px -3px 0px #b87900,
+    3px -3px 0px #b87900,
+    -3px 3px 0px #b87900,
+    0px 5px 15px rgba(0,0,0,0.5);
+    
+  font-family: "Arial Black", "Helvetica Black", sans-serif;
+  letter-spacing: 2px;
+  transform: rotate(-3deg); /* 少し傾けて動きを出す */
+  animation: floatTitle 3s ease-in-out infinite;
+}
+
+@keyframes floatTitle {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50% { transform: rotate(-3deg) translateY(-10px); }
+}
+
+/* メニューコンテナ（ボタン類をまとめる） */
+.title-menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+  max-width: 400px; /* 幅を制限してまとまりを出す */
+  z-index: 10;
+}
+
+/* メインモードボタン (PvP) */
+.btn-primary-mode {
+  width: 100%;
+  padding: 15px 0;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  
+  /* 青系のグラデーション */
+  background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: 3px solid #fff;
+  border-radius: 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary-mode:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+}
+
+/* CPUモードセクション */
+.cpu-mode-section {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px;
+  border-radius: 20px;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+/* 難易度ボタンの並び */
+.difficulty-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-level {
+  flex: 1; /* 横幅を均等に */
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 2px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  color: white;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
   transition: transform 0.2s;
 }
+.btn-level:hover { transform: translateY(-2px); }
 
-.mode-buttons button:hover {
-  transform: scale(1.05);
-  background: #0056b3;
+/* 難易度別の色 */
+.level-easy { background: #4caf50; }   /* 緑 */
+.level-normal { background: #ff9800; } /* オレンジ */
+.level-hard { background: #f44336; }   /* 赤 */
+
+/* ルールボタン */
+.btn-rules {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 10px 30px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-rules:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: white;
+}
+
+/* 著作権表記 */
+.copyright {
+  position: absolute;
+  bottom: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  text-shadow: 1px 1px 2px black;
 }
 
 /* ★ 結果表示エリア（埋め込み） */
@@ -468,9 +537,6 @@
   animation: pulse-border 1.5s infinite;
   z-index: 10; /* 他のセルより前面に */
 }
-
-/* 既にカードがある場所でも、一応配置不可であることを明確にするなら */
-/* （今回は「置ける場所」だけを目立たせる方針で行きます） */
 
 @keyframes pulse-border {
   0% {

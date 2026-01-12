@@ -15,95 +15,134 @@ export const CARD_MASTER_DATA: CardData[] = [
   // 居住系
   // ==========================================
   { 
-    id: "slum", name: "スラム", category: "RESIDENTIAL", rarity: "COMMON", cost: 1, 
-    image: "slum.png",
+    id: "student_district", name: "学生街", category: "RESIDENTIAL", rarity: "COMMON", cost: 1, 
+    image: "slum.png", // 画像変更推奨
     stats: { p1: 1, p2: 0, tax: 0 }, 
-    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], effects: [],
-    description: "低コストで配置しやすいが、効果は薄い。"
+    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
+    description: "学生が多く住む街。税収は無いが、安価に人口を増やせる。"
   },
   { 
-    id: "apartment", name: "アパート", category: "RESIDENTIAL", rarity: "COMMON", cost: 3, 
+    id: "apartment", name: "アパート", category: "RESIDENTIAL", rarity: "COMMON", cost: 2, 
     image: "apartment.png",
     stats: { p1: 3, p2: 0, tax: 1 }, 
-    arrows: ["UP"], effects: [],
-    description: "標準的な住居。上方向へのみ展開可能。"
+    arrows: ["UP"], 
+    description: "標準的な住居。コストが下がり使いやすくなった。"
   },
   { 
     id: "mansion", name: "マンション", category: "RESIDENTIAL", rarity: "UNCOMMON", cost: 5, 
     image: "mansion.png",
     stats: { p1: 5, p2: 0, tax: 1 }, 
-    arrows: ["LEFT", "RIGHT"], effects: [],
+    arrows: ["LEFT", "RIGHT"], 
     description: "多くの人口を抱える。横展開のみ。"
   },
   { 
     id: "high_class_area", name: "高級住宅地", category: "RESIDENTIAL", rarity: "RARE", cost: 6, 
     image: "high_class_area.png",
     stats: { p1: 4, p2: 0, tax: 3 }, 
-    arrows: ["UP"], effects: [],
+    arrows: ["UP"], 
     description: "人口と高い税収を両立する。"
   },
   { 
     id: "tower_mansion", name: "タワマン", category: "RESIDENTIAL", rarity: "LEGENDARY", cost: 8, 
     image: "tower_mansion.png",
     stats: { p1: 10, p2: -1, tax: 2 }, 
-    arrows: ["UP"], effects: [],
+    arrows: ["UP"], 
     description: "圧倒的な人口を誇るが、インフラを圧迫(-1)する。"
   },
 
   // ==========================================
-  // 非居住系
+  // インフラ・施設系
   // ==========================================
-  { 
-    id: "road", name: "道路", category: "NON_RESIDENTIAL", rarity: "COMMON", cost: 0, 
-    image: "road.png",
-    stats: { p1: 0, p2: 0, tax: 0 }, 
-    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], effects: [],
-    description: "コスト0で展開できる。"
-  },
   { 
     id: "convenience_store", name: "コンビニ", category: "NON_RESIDENTIAL", rarity: "COMMON", cost: 1, 
     image: "convenience_store.png",
     stats: { p1: 0, p2: 1, tax: 1 }, 
-    arrows: ["UP", "DOWN"], effects: [],
-    description: "小銭稼ぎ用。"
+    arrows: ["UP", "DOWN"], 
+    description: "小銭稼ぎとインフラ確保に。"
   },
   { 
     id: "supermarket", name: "スーパー", category: "NON_RESIDENTIAL", rarity: "UNCOMMON", cost: 2, 
     image: "supermarket.png",
-    stats: { p1: 0, p2: 1, tax: 2 }, 
-    arrows: ["LEFT", "RIGHT"], effects: [],
-    description: "インフラと税収のバランスが良い。"
+    stats: { p1: 0, p2: 1, tax: 1 }, 
+    arrows: ["LEFT"], 
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', targetStat: 'tax',
+      description: "隣接住居の税収+1" 
+    }],
+    description: "周辺地域の経済を活性化する。"
   },
   { 
     id: "clinic", name: "診療所", category: "NON_RESIDENTIAL", rarity: "UNCOMMON", cost: 2, 
     image: "clinic.png",
     stats: { p1: 0, p2: 2, tax: 0 }, 
     arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
-    effects: [{ trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', description: "隣接住居の人口+1" }],
-    description: "隣接する住居の人口を増やす。"
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', targetStat: 'p1',
+      description: "隣接住居の人口+1" 
+    }],
+    description: "医療インフラ。隣接する住居の人口を増やす。"
+  },
+  { 
+    id: "post_office", name: "郵便局", category: "NON_RESIDENTIAL", rarity: "COMMON", cost: 3, 
+    image: "post_office.png", 
+    stats: { p1: 0, p2: 2, tax: 0 }, 
+    arrows: ["UP", "LEFT", "RIGHT"], 
+    effects: [{ trigger: 'ON_PLACE', type: 'DRAW', value: 1, description: "配置時: 1ドロー" }],
+    description: "通信インフラ。手札を減らさずに配置できる。"
   },
   { 
     id: "police_station", name: "警察署", category: "NON_RESIDENTIAL", rarity: "UNCOMMON", cost: 3, 
     image: "police_station.png",
     stats: { p1: 0, p2: 2, tax: 0 }, 
     arrows: ["UP", "LEFT", "RIGHT"], 
-    effects: [{ trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', description: "隣接住居の人口+1" }],
-    description: "治安を守り、隣接住居の人口を増やす。"
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', targetStat: 'p2',
+      description: "隣接住居のインフラ+1" 
+    }],
+    description: "治安維持。隣接する住居のインフラ価値を高める。"
   },
   { 
-    id: "park", name: "公園", category: "NON_RESIDENTIAL", rarity: "COMMON", cost: 2, 
-    image: "park.png",
-    stats: { p1: 0, p2: 1, tax: 0 }, 
-    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
-    effects: [{ trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 1, targetCategory: 'RESIDENTIAL', description: "隣接住居の人口+1" }],
-    description: "隣接する住居の人口を増やす。"
+    id: "school", name: "学校", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 3, 
+    image: "school.png", 
+    stats: { p1: 0, p2: 2, tax: 0 }, 
+    arrows: ["UP", "DOWN"], 
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_GLOBAL', value: 1, targetCategory: 'RESIDENTIAL', targetStat: 'p1',
+      description: "全ての味方住居の人口+1" 
+    }],
+    description: "教育機関。街全体の住居の価値を高める。"
   },
   { 
-    id: "factory", name: "工場", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 3, 
+    id: "factory", name: "工場", category: "NON_RESIDENTIAL", rarity: "UNCOMMON", cost: 3, 
     image: "factory.png",
     stats: { p1: 0, p2: 3, tax: 1 }, 
-    arrows: ["DOWN"], effects: [],
-    description: "強力なインフラ源だが、配置が難しい。"
+    arrows: ["DOWN", "LEFT", "RIGHT"], 
+    description: "中盤のインフラの要。配置しやすくなった。"
+  },
+  { 
+    id: "data_center", name: "データセンター", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 4, 
+    image: "office.png", 
+    stats: { p1: 0, p2: 6, tax: 1 }, // P2を5→6に強化
+    arrows: ["UP", "DOWN"], 
+    description: "高度な情報処理施設。非常に高いインフラ能力を持つ。"
+  },
+  // ★複数効果: スタジアム
+  { 
+    id: "stadium", name: "スタジアム", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 4, 
+    image: "park.png", 
+    stats: { p1: 0, p2: 2, tax: 1 }, 
+    arrows: ["UP", "LEFT", "RIGHT"], 
+    effects: [
+      { 
+        trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: 2, targetCategory: 'RESIDENTIAL', targetStat: 'p1',
+        description: "隣接住居の人口+2" 
+      },
+      { 
+        trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: -1, targetCategory: 'RESIDENTIAL', targetStat: 'p2',
+        description: "混雑。隣接住居のインフラ-1" 
+      }
+    ],
+    description: "熱狂的なイベント施設。人は集まるが周辺は混雑する。"
   },
   { 
     id: "station", name: "駅", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 4, 
@@ -118,35 +157,47 @@ export const CARD_MASTER_DATA: CardData[] = [
     image: "office.png",
     stats: { p1: 0, p2: 2, tax: 1 }, 
     arrows: ["UP", "DOWN"], 
-    effects: [{ trigger: 'PASSIVE', type: 'BUFF_GLOBAL', value: 1, targetCategory: 'NON_RESIDENTIAL', description: "自分の[非居住系]全ての人口+1" }],
-    description: "ビジネス街を形成し、非居住系の価値を高める（※現在は人口加算仕様）。"
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_GLOBAL', value: 1, targetCategory: 'NON_RESIDENTIAL', targetStat: 'p1', 
+      description: "自分の[非居住系]全ての人口+1" 
+    }],
+    description: "ビジネス街を形成し、非居住系の価値を高める。"
   },
   {
-  "id": "power_plant",
-  "name": "火力発電所",
-  "category": "NON_RESIDENTIAL",
-  "rarity": "RARE",
-  "cost": 4,
-  "image": "power_plant.png",
-  "stats": {
-    "p1": 0,
-    "p2": 8,
-    "tax": 1
+    id: "power_plant", name: "火力発電所", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 4,
+    image: "power_plant.png",
+    stats: { p1: 0, p2: 8, tax: 1 },
+    arrows: ["LEFT", "RIGHT"],
+    effects: [{
+      trigger: "PASSIVE", type: "BUFF_ADJACENT", value: -1, targetCategory: "RESIDENTIAL", targetStat: 'p1',
+      description: "騒音と排煙。隣接する居住区の人口-1"
+    }],
+    description: "都市の活動を支える巨大なエネルギー源。"
   },
-  "arrows": [
-    "LEFT",
-    "RIGHT"
-  ],
-  "effects": [
-    {
-      "trigger": "PASSIVE",
-      "type": "BUFF_ADJACENT",
-      "value": -1,
-      "targetCategory": "RESIDENTIAL",
-      "description": "騒音と排煙。隣接する居住区の人口-1"
-    }
-  ],
-  "description": "都市の活動を支える巨大なエネルギー源。住宅地からは離して建設すべきだ。"
-}
-
+  // ★複数効果: 空港
+  { 
+    id: "airport", name: "空港", category: "NON_RESIDENTIAL", rarity: "RARE", cost: 5, 
+    image: "station.png", 
+    stats: { p1: 0, p2: 3, tax: 2 }, 
+    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
+    effects: [
+      { trigger: 'ON_PLACE', type: 'DRAW', value: 2, description: "配置時: 2ドロー" },
+      { 
+        trigger: 'PASSIVE', type: 'BUFF_ADJACENT', value: -2, targetCategory: 'RESIDENTIAL', targetStat: 'p1',
+        description: "騒音。隣接住居の人口-2" 
+      }
+    ],
+    description: "強力な物流ハブだが、騒音が激しい。"
+  },
+  { 
+    id: "university", name: "大学", category: "NON_RESIDENTIAL", rarity: "LEGENDARY", cost: 5, 
+    image: "office.png", 
+    stats: { p1: 0, p2: 5, tax: 0 }, 
+    arrows: ["UP", "DOWN", "LEFT", "RIGHT"], 
+    effects: [{ 
+      trigger: 'PASSIVE', type: 'BUFF_GLOBAL', value: 1, targetCategory: 'RESIDENTIAL', targetStat: 'p1',
+      description: "全ての味方住居の人口+1" 
+    }],
+    description: "街のブランドを高める研究機関。維持費がかかる(税収0)。"
+  }
 ];

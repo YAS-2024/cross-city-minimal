@@ -306,41 +306,42 @@ function App() {
     return grid;
   };
 
-  // --- タイトル画面 ---
-if (!gameMode) {
+// --- タイトル画面 ---
+  if (!gameMode) {
     return (
-      <div className="container start-screen">
-        <h1>Cross City Minimal</h1>
+      <div className="start-screen">
+        <div className="title-logo">Cross-City</div>
         
-        <div className="mode-buttons">
+        <div className="title-menu-container">
           {/* PvP ボタン */}
-          <button className="btn-pvp" onClick={() => startGame('PvP')}>
+          <button className="btn-primary-mode" onClick={() => startGame('PvP')}>
             二人で対戦 (PvP)
           </button>
           
           {/* PvC セクション */}
-          <div className="cpu-buttons">
-            <p>コンピュータと対戦 (PvC)</p>
+          <div className="cpu-mode-section">
+            <div className="section-label">コンピュータと対戦 (PvC)</div>
             <div className="difficulty-row">
-              <button className="btn-level" onClick={() => startGame('PvC', 'EASY')}>弱い (Easy)</button>
-              <button className="btn-level" onClick={() => startGame('PvC', 'NORMAL')}>普通 (Normal)</button>
-              <button className="btn-level" onClick={() => startGame('PvC', 'HARD')}>強い (Hard)</button>
+              <button className="btn-level level-easy" onClick={() => startGame('PvC', 'EASY')}>弱い</button>
+              <button className="btn-level level-normal" onClick={() => startGame('PvC', 'NORMAL')}>普通</button>
+              <button className="btn-level level-hard" onClick={() => startGame('PvC', 'HARD')}>強い</button>
             </div>
           </div>
-        </div>
 
-        {/* ルール説明ボタン (ここに統合) */}
-        <div style={{ marginTop: '24px' }}>
-          <button className="secondary-button" onClick={() => setShowRules(true)}>
+          {/* ルール説明ボタン */}
+          <button className="btn-rules" onClick={() => setShowRules(true)}>
             📖 ルール説明
           </button>
         </div>
 
-        {/* ルールモーダル (この画面でも表示できるように配置) */}
+        <div className="copyright">© 2024 Cross-City Project</div>
+
+        {/* ルールモーダル */}
         <RuleModal show={showRules} onClose={() => setShowRules(false)} />
       </div>
     );
   }
+
   const p1Score = Math.min(stats.Player1.p1, stats.Player1.p2);
   const p2Score = Math.min(stats.Player2.p1, stats.Player2.p2);
   

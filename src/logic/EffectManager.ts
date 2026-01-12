@@ -1,5 +1,5 @@
 import { GameMaster } from './GameMaster';
-import type { CardEntity, Position } from '../types';
+import type { CardEntity, Position, CardEffect } from '../types'; // ★修正: CardEffectを追加
 
 export class EffectManager {
   private gm: GameMaster;
@@ -108,11 +108,22 @@ export class EffectManager {
 
   // --- ヘルパー ---
 
-  private applyBuff(stats: { p1: number, p2: number, tax: number }, effect: any, targetCard: CardEntity) {
+  private applyBuff(stats: { p1: number, p2: number, tax: number }, effect: CardEffect, targetCard: CardEntity) {
+    // カテゴリ制限がある場合のチェック
     if (effect.targetCategory && targetCard.data.category !== effect.targetCategory) {
       return;
     }
-    stats.p1 += effect.value;
+
+    // ★修正: targetStat に応じて加算先を変更 (デフォルトは p1)
+    const target = effect.targetStat || 'p1';
+
+    if (target === 'p1') {
+      stats.p1 += effect.value;
+    } else if (target === 'p2') {
+      stats.p2 += effect.value;
+    } else if (target === 'tax') {
+      stats.tax += effect.value;
+    }
   }
 
   private isAdjacent(pos1: Position, pos2: Position): boolean {

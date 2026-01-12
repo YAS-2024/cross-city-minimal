@@ -15,6 +15,7 @@ export interface CardEffect {
   type: EffectType;
   value: number;
   targetCategory?: CardCategory;
+  targetStat?: 'p1' | 'p2' | 'tax'; // ★追加: バフの対象ステータスを指定
   description: string;
 }
 
